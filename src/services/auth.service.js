@@ -1,3 +1,4 @@
+const { Op } = require("sequelize");
 const User = require("../models/user.model");
 
 module.exports = class UserService {
@@ -5,28 +6,31 @@ module.exports = class UserService {
     return await User.create(body);
   }
 
-  async fetchAllUsers() {
-    return await User.find({ isActive: true }).select("-password");
+  async findByEmail(email) {
+    return await User.findOne({ where: { email } });
   }
 
-  async fetchSingleUser(userId) {
-    return await User.findOne({ _id: userId, isActive: true }).select(
-      "-password",
-    );
+  async findByUsername(user_name) {
+    return await User.findOne({ where: { user_name } });
   }
 
-  async updateUser(userId, body) {
-    return await User.findOneAndUpdate({ _id: userId, isActive: true }, body, {
-      new: true,
-      runValidators: true,
-    }).select("-password");
+  async findByPhone(phone_no) {
+    return await User.findOne({ where: { phone_no } });
   }
 
-  async deleteUser(userId) {
-    return await User.findOneAndUpdate(
-      { _id: userId },
-      { isActive: false },
-      { new: true },
-    );
+  async findByLoginField(identifier) {
+    return await User.findOne({
+      where: {
+        [Op.or]: [
+          { email: identifier },
+          { user_name: identifier },
+          { phone_no: identifier },
+        ],
+      },
+    });
+  }
+
+  async findById(id) {
+    return await User.findByPk(id);
   }
 };

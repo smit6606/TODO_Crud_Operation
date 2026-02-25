@@ -1,67 +1,75 @@
-const mongoose = require("mongoose");
+const { DataTypes, Model } = require("sequelize");
+const bcrypt = require("bcrypt");
+const { sequelize } = require("../config/database");
 
-const userSchema = new mongoose.Schema(
+class User extends Model { }
+
+User.init(
   {
-    username: {
-      type: String,
-      required: true,
+    id: {
+      type: DataTypes.INTEGER.UNSIGNED,
+      autoIncrement: true,
+      primaryKey: true,
+      allowNull: false,
       unique: true,
-      trim: true,
-      index: true,
     },
 
     name: {
-      type: String,
-      required: true,
-      trim: true,
+      type: DataTypes.STRING,
+      allowNull: false,
     },
-
-    email: {
-      type: String,
-      required: true,
+    user_name: {
+      type: DataTypes.STRING,
+      allowNull: false,
       unique: true,
-      lowercase: true,
-      trim: true,
-      index: true,
     },
-
+    email: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      unique: true,
+    },
     password: {
-      type: String,
-      required: true,
-      select: false,
+      type: DataTypes.STRING,
+      allowNull: false,
     },
-
+    phone_no: {
+      type: DataTypes.CHAR(10),
+      allowNull: false,
+      unique: true,
+    },
     gender: {
-      type: String,
-      enum: ["male", "female", "other"],
-      required: true,
+      type: DataTypes.ENUM("male", "female", "other"),
+      allowNull: false,
     },
-
     about: {
-      type: String,
-      required: true,
+      type: DataTypes.TEXT,
+      allowNull: false,
     },
-
     profile_image: {
-      type: String,
-      required: true,
+      type: DataTypes.STRING,
+      allowNull: false,
     },
-    isActive: {
-      type: Boolean,
-      default: true,
+    is_Active: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: true,
     },
   },
   {
+    sequelize,
+    modelName: "User",
+    tableName: "User",
     timestamps: true,
+    hooks: {
+      beforeCreate: async (user) => {
+        user.password = await bcrypt.hash(user.password, 10);
+      },
+      beforeUpdate: async (user) => {
+        if (user.changed("password")) {
+          user.password = await bcrypt.hash(user.password, 10);
+        }
+      },
+    },
   },
 );
 
-userSchema.pre("save", async function (next) {
-  if (!this.isModified("password")) return next();
-
-  const bcrypt = require("bcrypt");
-  this.password = await bcrypt.hash(this.password, 10);
-  next();
-});
-
-module.exports = mongoose.model("User", userSchema, "User");
+module.exports = User;

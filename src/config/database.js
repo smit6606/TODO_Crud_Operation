@@ -1,4 +1,17 @@
 const mysql = require("mysql2/promise");
+const { Sequelize } = require("sequelize");
+
+const sequelize = new Sequelize(
+  process.env.DB_NAME,
+  process.env.DB_USER,
+  process.env.DB_PASSWORD,
+  {
+    dialect: "mysql",
+    host: process.env.DB_HOST,
+    timezone: "+05:30",
+    logging: process.env.NODE_ENV === "development" ? console.log : false,
+  },
+);
 
 async function connectDB() {
   try {
@@ -25,4 +38,4 @@ async function connectDB() {
   }
 }
 
-module.exports = connectDB;
+module.exports = { connectDB, sequelize };

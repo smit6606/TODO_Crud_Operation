@@ -1,10 +1,10 @@
-export const MSG = {
+module.exports.MSG = {
   /* ==========================
      AUTHENTICATION
   ========================== */
   AUTH: {
     LOGIN_SUCCESS: "Login successful.",
-    LOGIN_FAILED: "Invalid email or password.",
+    LOGIN_FAILED: "Invalid credentials.",
     REGISTER_SUCCESS: "Account created successfully.",
     LOGOUT_SUCCESS: "Logged out successfully.",
     TOKEN_GENERATED: "Access token generated successfully.",
@@ -36,7 +36,9 @@ export const MSG = {
   USER_ERROR: {
     NOT_FOUND: "User not found.",
     ALREADY_EXISTS: "User already exists.",
-    EMAIL_EXISTS: "Email is already registered.",
+    EMAIL_EXISTS: "User with same email already exists.",
+    USERNAME_EXISTS: "User with same username already exists.",
+    PHONE_EXISTS: "User with same mobile number already exists.",
     INVALID_CREDENTIALS: "Invalid user credentials.",
     PASSWORD_MISMATCH: "Password does not match.",
     VALIDATION_FAILED: "User validation failed.",
