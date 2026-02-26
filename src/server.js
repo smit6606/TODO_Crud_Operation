@@ -9,7 +9,6 @@ async function startServer() {
   try {
     await connectDB();
 
-    // Init models before syncing
     require("./models/user");
     require("./models/todo");
 

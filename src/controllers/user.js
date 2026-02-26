@@ -4,8 +4,7 @@ const { errorResponse, successResponse } = require("../utils/responseFormat");
 const UserService = require("../services/auth");
 const TodoService = require("../services/todo");
 const cloudinary = require("../config/cloudinary");
-const fs = require("fs");
-const { deleteCloudinaryImage } = require("../utils/cloudinaryHelper");
+const { deleteCloudinaryImage, uploadCloudinaryBuffer } = require("../utils/cloudinaryHelper");
 
 const userService = new UserService();
 const todoService = new TodoService();
@@ -100,11 +99,8 @@ module.exports.updateProfile = async (req, res) => {
         await deleteCloudinaryImage(user.profile_image);
       }
 
-      const uploadResult = await cloudinary.uploader.upload(req.file.path, {
-        folder: "User and Todo Crud",
-      });
+      const uploadResult = await uploadCloudinaryBuffer(req.file.buffer);
       updatedData.profile_image = uploadResult.secure_url;
-      fs.unlinkSync(req.file.path);
     } else if (profile_image) {
       updatedData.profile_image = profile_image;
     }
@@ -118,9 +114,6 @@ module.exports.updateProfile = async (req, res) => {
       data: updatedUser,
     });
   } catch (error) {
-    if (req.file) {
-      fs.unlinkSync(req.file.path);
-    }
     if (error.name === "SequelizeUniqueConstraintError") {
       return errorResponse({
         res,
