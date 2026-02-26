@@ -2,6 +2,9 @@ const { StatusCodes } = require("http-status-codes");
 const { MSG } = require("../utils/message");
 const { errorResponse, successResponse } = require("../utils/responseFormat");
 const UserService = require("../services/auth");
+const cloudinary = require("../config/cloudinary");
+const fs = require("fs");
+const { deleteCloudinaryImage } = require("../utils/cloudinaryHelper");
 
 const userService = new UserService();
 
@@ -58,7 +61,6 @@ module.exports.updateProfile = async (req, res) => {
       is_active,
     } = req.body;
 
-    // Restrict `id` and `is_active` updates
     if (id !== undefined || is_active !== undefined) {
       return errorResponse({
         res,
@@ -85,15 +87,25 @@ module.exports.updateProfile = async (req, res) => {
       });
     }
 
+    const allowedFields = ["name", "email", "phone_no", "password", "user_name", "gender", "about"];
     const updatedData = {};
-    if (name) updatedData.name = name;
-    if (email) updatedData.email = email;
-    if (phone_no) updatedData.phone_no = phone_no;
-    if (password) updatedData.password = password;
-    if (user_name) updatedData.user_name = user_name;
-    if (gender) updatedData.gender = gender;
-    if (about) updatedData.about = about;
-    if (profile_image) updatedData.profile_image = profile_image;
+    allowedFields.forEach((field) => {
+      if (req.body[field]) updatedData[field] = req.body[field];
+    });
+
+    if (req.file) {
+      if (user.profile_image) {
+        await deleteCloudinaryImage(user.profile_image);
+      }
+
+      const uploadResult = await cloudinary.uploader.upload(req.file.path, {
+        folder: "User and Todo Crud",
+      });
+      updatedData.profile_image = uploadResult.secure_url;
+      fs.unlinkSync(req.file.path);
+    } else if (profile_image) {
+      updatedData.profile_image = profile_image;
+    }
 
     const updatedUser = await userService.updateUser(user, updatedData);
 
@@ -104,6 +116,9 @@ module.exports.updateProfile = async (req, res) => {
       data: updatedUser,
     });
   } catch (error) {
+    if (req.file) {
+      fs.unlinkSync(req.file.path);
+    }
     if (error.name === "SequelizeUniqueConstraintError") {
       return errorResponse({
         res,
@@ -142,6 +157,10 @@ module.exports.deleteProfile = async (req, res) => {
         statusCode: StatusCodes.FORBIDDEN,
         message: MSG.ACCESS.UNAUTHORIZED_DELETE,
       });
+    }
+
+    if (user.profile_image) {
+      await deleteCloudinaryImage(user.profile_image);
     }
 
     await userService.deleteUser(user);

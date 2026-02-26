@@ -3,6 +3,7 @@ const route = express.Router();
 
 const { registerUser, loginUser } = require("../controllers/auth");
 const { validateRegister } = require("../validations/user");
+const upload = require("../middleware/upload");
 
 /*
 |--------------------------------------------------------------------------
@@ -12,7 +13,7 @@ const { validateRegister } = require("../validations/user");
 
 // 1. CREATE User
 //  route - POST /api/auth/register
-route.post("/register", validateRegister, registerUser);
+route.post("/register", upload.single("profile_image"), validateRegister, registerUser);
 
 // 2. Login User
 //  route - POST /api/auth/login

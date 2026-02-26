@@ -4,6 +4,8 @@ const { MSG } = require("../utils/message");
 const { errorResponse, successResponse } = require("../utils/responseFormat");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
+const cloudinary = require("../config/cloudinary");
+const fs = require("fs");
 
 const userService = new UserService();
 
@@ -38,21 +40,32 @@ module.exports.registerUser = async (req, res) => {
       });
     }
 
-    const newUser = await userService.registerUser(req.body);
+    let profile_image = req.body.profile_image;
+
+    if (req.file) {
+      const uploadResult = await cloudinary.uploader.upload(req.file.path, {
+        folder: "User and Todo Crud",
+      });
+      profile_image = uploadResult.secure_url;
+      fs.unlinkSync(req.file.path);
+    }
+
+    const userData = { ...req.body, profile_image };
+    const newUser = await userService.registerUser(userData);
+
+    const userResponse = newUser.toJSON();
+    delete userResponse.password;
 
     return successResponse({
       res,
       statusCode: StatusCodes.CREATED,
       message: MSG.USER.CREATED,
-      data: {
-        id: newUser.id,
-        name: newUser.name,
-        email: newUser.email,
-        user_name: newUser.user_name,
-        gender: newUser.gender,
-      },
+      data: userResponse,
     });
   } catch (error) {
+    if (req.file) {
+      fs.unlinkSync(req.file.path);
+    }
     if (error.name === "SequelizeValidationError") {
       return errorResponse({
         res,

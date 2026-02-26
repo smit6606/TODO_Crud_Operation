@@ -10,6 +10,7 @@ const {
 } = require("../controllers/user");
 
 const { validateUpdate } = require("../validations/user");
+const upload = require("../middleware/upload");
 
 /*
 |--------------------------------------------------------------------------
@@ -23,8 +24,8 @@ route.get("/profile", getProfile);
 
 // Update User Profile
 // route - PUT /api/user/profile/:id (or /api/user/profile)
-route.put("/profile", validateUpdate, updateProfile);
-route.put("/profile/:id", validateUpdate, updateProfile);
+route.put("/profile", upload.single("profile_image"), validateUpdate, updateProfile);
+route.put("/profile/:id", upload.single("profile_image"), validateUpdate, updateProfile);
 
 // Delete User Account
 // route - DELETE /api/user/profile/:id (or /api/user/profile)

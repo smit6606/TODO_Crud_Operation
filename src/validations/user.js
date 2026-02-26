@@ -3,7 +3,7 @@ const { MSG } = require("../utils/message");
 const { errorResponse } = require("../utils/responseFormat");
 
 const validateUserFields = (req, res, next) => {
-    const { name, email, phone_no, password } = req.body;
+    const { name, email, phone_no, password } = req.body || {};
 
     // 1. Validate Name
     if (name) {
@@ -60,7 +60,8 @@ const validateUserFields = (req, res, next) => {
 };
 
 const validateRegister = (req, res, next) => {
-    const { name, email, phone_no, password, user_name, gender, about, profile_image } = req.body;
+    const { name, email, phone_no, password, user_name, gender, about } = req.body || {};
+    const profile_image = req.file || req.body.profile_image;
 
     if (!name || !email || !phone_no || !password || !user_name || !gender || !about || !profile_image) {
         return errorResponse({
