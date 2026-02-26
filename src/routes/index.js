@@ -7,5 +7,6 @@ route.use("/auth", require("./auth.js"));
 route.use(authMiddleware);
 
 route.use("/user", require("./user.js"));
+route.use("/task", require("./task.js"));
 
 module.exports = route;

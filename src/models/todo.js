@@ -1,52 +1,51 @@
-const mongoose = require("mongoose");
+const { DataTypes, Model } = require("sequelize");
+const { sequelize } = require("../config/database");
+const User = require("./user");
 
-const todoSchema = new mongoose.Schema(
+class Todo extends Model { }
+
+Todo.init(
   {
-    user: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-      required: true,
-      index: true,
+    id: {
+      type: DataTypes.INTEGER.UNSIGNED,
+      autoIncrement: true,
+      primaryKey: true,
+      allowNull: false,
     },
-
     title: {
-      type: String,
-      required: true,
-      trim: true,
+      type: DataTypes.STRING,
+      allowNull: false,
     },
-
     description: {
-      type: String,
-      required: true,
+      type: DataTypes.TEXT,
+      allowNull: false,
     },
-
-    dueDate: {
-      type: Date,
-      required: true,
-    },
-
     status: {
-      type: String,
-      enum: ["pending", "in-progress", "completed"],
-      default: "pending",
+      type: DataTypes.ENUM("pending", "in-progress", "completed"),
+      defaultValue: "pending",
+      allowNull: false,
     },
-
     priority: {
-      type: String,
-      enum: ["low", "medium", "high"],
-      default: "medium",
+      type: DataTypes.ENUM("low", "medium", "high"),
+      defaultValue: "medium",
+      allowNull: false,
     },
-
     isDeleted: {
-      type: Boolean,
-      default: false,
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+      allowNull: false,
     },
   },
   {
+    sequelize,
+    modelName: "Todo",
+    tableName: "Todo",
     timestamps: true,
-  },
+  }
 );
 
-todoSchema.index({ user: 1, title: 1 }, { unique: true });
+// Define Associations
+User.hasMany(Todo, { foreignKey: "userId", onDelete: "CASCADE" });
+Todo.belongsTo(User, { foreignKey: "userId" });
 
-module.exports = mongoose.model("Todo", todoSchema, "Todo");
+module.exports = Todo;

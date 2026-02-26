@@ -23,6 +23,8 @@ module.exports.MSG = {
     ACCESS_DENIED: "Access denied.",
     UNAUTHORIZED_UPDATE: "You are not authorized to update another user's profile.",
     UNAUTHORIZED_DELETE: "You are not authorized to delete another user's profile.",
+    UNAUTHORIZED_TODO_UPDATE: "You are not authorized to update another user's task.",
+    UNAUTHORIZED_TODO_DELETE: "You are not authorized to delete another user's task.",
   },
 
   /* ==========================
@@ -49,6 +51,7 @@ module.exports.MSG = {
     PASSWORD_MISMATCH: "Password does not match.",
     VALIDATION_FAILED: "User validation failed.",
     RESTRICTED_FIELDS: "You cannot update restricted fields like id or is_active.",
+    INCOMPLETE_TASKS: "You cannot delete your account until all your tasks are completed.",
   },
 
   /* ==========================
@@ -68,6 +71,7 @@ module.exports.MSG = {
     NOT_FOUND: "Task not found.",
     ALREADY_EXISTS: "Task already exists.",
     INVALID_STATUS: "Invalid task status provided.",
+    INVALID_PRIORITY: "Invalid task priority provided.",
     VALIDATION_FAILED: "Task validation failed.",
   },
 

@@ -2,11 +2,13 @@ const { StatusCodes } = require("http-status-codes");
 const { MSG } = require("../utils/message");
 const { errorResponse, successResponse } = require("../utils/responseFormat");
 const UserService = require("../services/auth");
+const TodoService = require("../services/todo");
 const cloudinary = require("../config/cloudinary");
 const fs = require("fs");
 const { deleteCloudinaryImage } = require("../utils/cloudinaryHelper");
 
 const userService = new UserService();
+const todoService = new TodoService();
 
 const getUserId = (req) => {
   if (req.user && req.user.id) return req.user.id;
@@ -156,6 +158,15 @@ module.exports.deleteProfile = async (req, res) => {
         res,
         statusCode: StatusCodes.FORBIDDEN,
         message: MSG.ACCESS.UNAUTHORIZED_DELETE,
+      });
+    }
+
+    const incompleteCount = await todoService.countIncompleteTodos(user.id);
+    if (incompleteCount > 0) {
+      return errorResponse({
+        res,
+        statusCode: StatusCodes.BAD_REQUEST,
+        message: MSG.USER_ERROR.INCOMPLETE_TASKS,
       });
     }
 
