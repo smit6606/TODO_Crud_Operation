@@ -1,9 +1,7 @@
-require("dotenv").config();
-const express = require("express");
-const app = express();
-
+const app = require("./app");
 const { connectDB, sequelize } = require("./config/database");
-const PORT = process.env.PORT;
+
+const PORT = process.env.PORT || 3000;
 
 async function startServer() {
   try {
@@ -27,10 +25,5 @@ async function startServer() {
     console.error("Server Error:", error);
   }
 }
-
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-
-app.use("/api", require("./routes/index.js"));
 
 startServer();
