@@ -2,7 +2,7 @@ const { StatusCodes } = require("http-status-codes");
 const { errorResponse } = require("../utils/responseFormat");
 const { MSG } = require("../utils/message");
 const jwt = require("jsonwebtoken");
-const UserService = require("../services/auth.service");
+const UserService = require("../services/auth");
 
 const userService = new UserService();
 
@@ -28,7 +28,7 @@ const authMiddleware = async (req, res, next) => {
       return errorResponse({
         res,
         statusCode: StatusCodes.UNAUTHORIZED,
-        message: MSG.USER_ERROR.NOT_FOUND,
+        message: MSG.ACCESS.TOKEN_DELETED,
       });
     }
 

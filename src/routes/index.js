@@ -1,11 +1,11 @@
 const express = require("express");
-const authMiddleware = require("../middleware/auth.middleware.js");
+const authMiddleware = require("../middleware/auth.js");
 const route = express.Router();
 
-route.use("/auth", require("./auth.route.js"));
+route.use("/auth", require("./auth.js"));
 
 route.use(authMiddleware);
 
-route.use("/user", require("./user.route.js"));
+route.use("/user", require("./user.js"));
 
 module.exports = route;

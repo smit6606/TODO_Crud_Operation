@@ -1,7 +1,9 @@
 const { StatusCodes } = require("http-status-codes");
 const { MSG } = require("../utils/message");
 const { errorResponse, successResponse } = require("../utils/responseFormat");
-const User = require("../models/user.model");
+const UserService = require("../services/auth");
+
+const userService = new UserService();
 
 const getUserId = (req) => {
   if (req.user && req.user.id) return req.user.id;
@@ -12,22 +14,20 @@ const getUserId = (req) => {
 module.exports.getProfile = async (req, res) => {
   try {
     const userId = getUserId(req);
-    const user = await User.findByPk(userId, {
-      attributes: { exclude: ["password"] },
-    });
+    const user = await userService.findByIdWithoutPassword(userId);
 
     if (!user) {
       return errorResponse({
         res,
         statusCode: StatusCodes.NOT_FOUND,
-        message: "User not found",
+        message: MSG.USER_ERROR.NOT_FOUND,
       });
     }
 
     return successResponse({
       res,
       statusCode: StatusCodes.OK,
-      message: "Profile retrieved successfully",
+      message: MSG.USER.PROFILE_FETCHED,
       data: user,
     });
   } catch (error) {
@@ -42,7 +42,9 @@ module.exports.getProfile = async (req, res) => {
 
 module.exports.updateProfile = async (req, res) => {
   try {
-    const userId = getUserId(req);
+    const loggedInUserId = getUserId(req);
+    const requestedUserId = req.params.id || loggedInUserId;
+
     const {
       name,
       email,
@@ -52,15 +54,34 @@ module.exports.updateProfile = async (req, res) => {
       gender,
       about,
       profile_image,
+      id,
+      is_active,
     } = req.body;
 
-    const user = await User.findByPk(userId);
+    // Restrict `id` and `is_active` updates
+    if (id !== undefined || is_active !== undefined) {
+      return errorResponse({
+        res,
+        statusCode: StatusCodes.BAD_REQUEST,
+        message: MSG.USER_ERROR.RESTRICTED_FIELDS,
+      });
+    }
+
+    const user = await userService.findById(requestedUserId);
 
     if (!user) {
       return errorResponse({
         res,
         statusCode: StatusCodes.NOT_FOUND,
-        message: "User not found",
+        message: MSG.USER_ERROR.NOT_FOUND,
+      });
+    }
+
+    if (String(user.id) !== String(loggedInUserId)) {
+      return errorResponse({
+        res,
+        statusCode: StatusCodes.FORBIDDEN,
+        message: MSG.ACCESS.UNAUTHORIZED_UPDATE,
       });
     }
 
@@ -74,16 +95,12 @@ module.exports.updateProfile = async (req, res) => {
     if (about) updatedData.about = about;
     if (profile_image) updatedData.profile_image = profile_image;
 
-    await user.update(updatedData);
-
-    const updatedUser = await User.findByPk(userId, {
-      attributes: { exclude: ["password"] },
-    });
+    const updatedUser = await userService.updateUser(user, updatedData);
 
     return successResponse({
       res,
       statusCode: StatusCodes.OK,
-      message: "Profile updated successfully",
+      message: MSG.USER.PROFILE_UPDATED,
       data: updatedUser,
     });
   } catch (error) {
@@ -91,7 +108,7 @@ module.exports.updateProfile = async (req, res) => {
       return errorResponse({
         res,
         statusCode: StatusCodes.BAD_REQUEST,
-        message: "Validation Error",
+        message: MSG.USER_ERROR.VALIDATION_FAILED,
         error: error.errors[0].message,
       });
     }
@@ -106,23 +123,33 @@ module.exports.updateProfile = async (req, res) => {
 
 module.exports.deleteProfile = async (req, res) => {
   try {
-    const userId = getUserId(req);
-    const user = await User.findByPk(userId);
+    const loggedInUserId = getUserId(req);
+    const requestedUserId = req.params.id || loggedInUserId;
+
+    const user = await userService.findById(requestedUserId);
 
     if (!user) {
       return errorResponse({
         res,
         statusCode: StatusCodes.NOT_FOUND,
-        message: "User not found",
+        message: MSG.USER_ERROR.NOT_FOUND,
       });
     }
 
-    await user.destroy();
+    if (String(user.id) !== String(loggedInUserId)) {
+      return errorResponse({
+        res,
+        statusCode: StatusCodes.FORBIDDEN,
+        message: MSG.ACCESS.UNAUTHORIZED_DELETE,
+      });
+    }
+
+    await userService.deleteUser(user);
 
     return successResponse({
       res,
       statusCode: StatusCodes.OK,
-      message: "Profile deleted successfully",
+      message: MSG.USER.PROFILE_DELETED,
     });
   } catch (error) {
     return errorResponse({
@@ -136,14 +163,12 @@ module.exports.deleteProfile = async (req, res) => {
 
 module.exports.getAllUsers = async (req, res) => {
   try {
-    const users = await User.findAll({
-      attributes: { exclude: ["password"] },
-    });
+    const users = await userService.findAllUsers();
 
     return successResponse({
       res,
       statusCode: StatusCodes.OK,
-      message: "Users retrieved successfully",
+      message: MSG.USER.FETCHED_ALL,
       data: users,
     });
   } catch (error) {
@@ -159,22 +184,20 @@ module.exports.getAllUsers = async (req, res) => {
 module.exports.getUserById = async (req, res) => {
   try {
     const userId = req.params.id;
-    const user = await User.findByPk(userId, {
-      attributes: { exclude: ["password"] },
-    });
+    const user = await userService.findByIdWithoutPassword(userId);
 
     if (!user) {
       return errorResponse({
         res,
         statusCode: StatusCodes.NOT_FOUND,
-        message: "User not found",
+        message: MSG.USER_ERROR.NOT_FOUND,
       });
     }
 
     return successResponse({
       res,
       statusCode: StatusCodes.OK,
-      message: "User retrieved successfully",
+      message: MSG.USER.FETCHED,
       data: user,
     });
   } catch (error) {

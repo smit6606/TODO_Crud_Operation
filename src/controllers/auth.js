@@ -1,5 +1,5 @@
 const { StatusCodes } = require("http-status-codes");
-const UserService = require("../services/auth.service");
+const UserService = require("../services/auth");
 const { MSG } = require("../utils/message");
 const { errorResponse, successResponse } = require("../utils/responseFormat");
 const bcrypt = require("bcrypt");

@@ -7,9 +7,9 @@ const {
   deleteProfile,
   getAllUsers,
   getUserById,
-} = require("../controllers/user.controller");
+} = require("../controllers/user");
 
-const { validateUpdate } = require("../validations/user.validation");
+const { validateUpdate } = require("../validations/user");
 
 /*
 |--------------------------------------------------------------------------
@@ -18,23 +18,25 @@ const { validateUpdate } = require("../validations/user.validation");
 */
 
 // Get User Profile
-// route - GET /api/users/profile
+// route - GET /api/user/profile
 route.get("/profile", getProfile);
 
 // Update User Profile
-// route - PUT /api/users/profile
+// route - PUT /api/user/profile/:id (or /api/user/profile)
 route.put("/profile", validateUpdate, updateProfile);
+route.put("/profile/:id", validateUpdate, updateProfile);
 
 // Delete User Account
-// route - DELETE /api/users/profile
+// route - DELETE /api/user/profile/:id (or /api/user/profile)
 route.delete("/profile", deleteProfile);
+route.delete("/profile/:id", deleteProfile);
 
 // Get All Users
-// route - GET /api/users
+// route - GET /api/user
 route.get("/", getAllUsers);
 
 // Get Single User By ID
-// route - GET /api/users/:id
+// route - GET /api/user/:id
 route.get("/:id", getUserById);
 
 module.exports = route;

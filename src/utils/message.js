@@ -19,7 +19,10 @@ module.exports.MSG = {
     FORBIDDEN: "You do not have permission to perform this action.",
     TOKEN_MISSING: "Authentication token is missing.",
     TOKEN_INVALID: "Invalid or expired authentication token.",
+    TOKEN_DELETED: "Token is no longer valid. User does not exist.",
     ACCESS_DENIED: "Access denied.",
+    UNAUTHORIZED_UPDATE: "You are not authorized to update another user's profile.",
+    UNAUTHORIZED_DELETE: "You are not authorized to delete another user's profile.",
   },
 
   /* ==========================
@@ -31,6 +34,9 @@ module.exports.MSG = {
     DELETED: "User deleted successfully.",
     FETCHED: "User details retrieved successfully.",
     FETCHED_ALL: "Users retrieved successfully.",
+    PROFILE_FETCHED: "Profile retrieved successfully.",
+    PROFILE_UPDATED: "Profile updated successfully.",
+    PROFILE_DELETED: "Profile deleted successfully.",
   },
 
   USER_ERROR: {
@@ -42,6 +48,7 @@ module.exports.MSG = {
     INVALID_CREDENTIALS: "Invalid user credentials.",
     PASSWORD_MISMATCH: "Password does not match.",
     VALIDATION_FAILED: "User validation failed.",
+    RESTRICTED_FIELDS: "You cannot update restricted fields like id or is_active.",
   },
 
   /* ==========================

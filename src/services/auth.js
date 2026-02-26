@@ -1,5 +1,5 @@
 const { Op } = require("sequelize");
-const User = require("../models/user.model");
+const User = require("../models/user");
 
 module.exports = class UserService {
   async registerUser(body) {
@@ -32,5 +32,25 @@ module.exports = class UserService {
 
   async findById(id) {
     return await User.findByPk(id);
+  }
+  async findByIdWithoutPassword(id) {
+    return await User.findByPk(id, {
+      attributes: { exclude: ["password"] },
+    });
+  }
+
+  async updateUser(user, updatedData) {
+    await user.update(updatedData);
+    return await this.findByIdWithoutPassword(user.id);
+  }
+
+  async deleteUser(user) {
+    return await user.destroy();
+  }
+
+  async findAllUsers() {
+    return await User.findAll({
+      attributes: { exclude: ["password"] },
+    });
   }
 };
