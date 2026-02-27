@@ -5,8 +5,8 @@ const {
   getProfile,
   updateProfile,
   deleteProfile,
-  getAllUsers,
   getUserById,
+  getUsersWithCompletedTodos,
 } = require("../controllers/user");
 
 const { validateUpdate } = require("../validations/user");
@@ -32,9 +32,10 @@ route.put("/profile/:id", upload.single("profile_image"), validateUpdate, update
 route.delete("/profile", deleteProfile);
 route.delete("/profile/:id", deleteProfile);
 
-// Get All Users
-// route - GET /api/user
-route.get("/", getAllUsers);
+
+// Get Users With Completed Todos Only
+// route - GET /api/user/completed-all
+route.get("/completed-all", getUsersWithCompletedTodos);
 
 // Get Single User By ID
 // route - GET /api/user/:id

@@ -204,6 +204,48 @@ module.exports.getAllUsers = async (req, res) => {
   }
 };
 
+module.exports.getUsersWithCompletedTodos = async (req, res) => {
+  try {
+    // Logic: A user has completed all tasks if they have >0 tasks AND their incomplete task count is 0
+    const users = await userService.findAllUsers();
+
+    // We filter sequentially here since we already have robust service logic 
+    // counting incomplete todos safely handling the 'isDeleted: false' properties cleanly.
+
+    const completedUsers = [];
+
+    for (let user of users) {
+      // Find all valid tasks they own 
+      const totalTodos = await todoService.findTodosByUser(user.id);
+
+      // If they actually have tasks
+      if (totalTodos.length > 0) {
+        // Find if they have incomplete ones
+        const incompleteCount = await todoService.countIncompleteTodos(user.id);
+
+        // If incomplete is exactly 0, they belong in our requested filtered array
+        if (incompleteCount === 0) {
+          completedUsers.push(user);
+        }
+      }
+    }
+
+    return successResponse({
+      res,
+      statusCode: StatusCodes.OK,
+      message: MSG.USER.FETCHED_ALL, // Could specify a unique message but this resolves to generic array fetches safely
+      data: completedUsers,
+    });
+  } catch (error) {
+    return errorResponse({
+      res,
+      statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
+      message: MSG.SERVER.INTERNAL_ERROR,
+      error: error.message,
+    });
+  }
+};
+
 module.exports.getUserById = async (req, res) => {
   try {
     const userId = req.params.id;

@@ -12,14 +12,18 @@ async function startServer() {
 
     await sequelize.sync();
 
-    console.log("Sequelize is running");
+    if (process.env.NODE_ENV !== "production") {
+      console.log("Sequelize is running");
+    }
 
     app.listen(PORT, (error) => {
       if (error) {
         console.log("The Server is not started", error);
         return;
       }
-      console.log(`The Server is started on port: ${PORT}`);
+      if (process.env.NODE_ENV !== "production") {
+        console.log(`The Server is started on port: ${PORT}`);
+      }
     });
   } catch (error) {
     console.error("Server Error:", error);

@@ -21,15 +21,21 @@ async function connectDB() {
       password: process.env.DB_PASSWORD,
     });
 
-    console.log("MySQL Connected");
+    if (process.env.NODE_ENV !== "production") {
+      console.log("MySQL Connected");
+    }
 
     await connection.query(
       `CREATE DATABASE IF NOT EXISTS ${process.env.DB_NAME}`,
     );
-    console.log("Database ready");
+    if (process.env.NODE_ENV !== "production") {
+      console.log("Database ready");
+    }
 
     await connection.query(`USE ${process.env.DB_NAME}`);
-    console.log(`Using ${process.env.DB_NAME} 🚀`);
+    if (process.env.NODE_ENV !== "production") {
+      console.log(`Using ${process.env.DB_NAME} 🚀`);
+    }
 
     return connection;
   } catch (error) {

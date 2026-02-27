@@ -9,6 +9,11 @@ const { uploadCloudinaryBuffer } = require("../utils/cloudinaryHelper");
 
 const userService = new UserService();
 
+/**
+ * This function registers a new user in the system.
+ * It checks if the email, username, or phone number already exists before creating the account.
+ * It also handles uploading a profile picture if one is provided.
+ */
 module.exports.registerUser = async (req, res) => {
   try {
     const { email, user_name, phone_no } = req.body;
@@ -78,15 +83,28 @@ module.exports.registerUser = async (req, res) => {
   }
 };
 
+/**
+ * This function logs in an existing user.
+ * It verifies that the user provided an identifier (email, username, or phone) and a valid password.
+ * If successful, it securely returns a token (digital key) so the user can access their account.
+ */
 module.exports.loginUser = async (req, res) => {
   try {
     const { email, user_name, phone_no, password } = req.body;
 
-    if (!password || (!email && !user_name && !phone_no)) {
+    if (!password) {
       return errorResponse({
         res,
         statusCode: StatusCodes.BAD_REQUEST,
-        message: MSG.REQUEST.MISSING_FIELDS,
+        message: MSG.REQUEST.MISSING_PASSWORD,
+      });
+    }
+
+    if (!email && !user_name && !phone_no) {
+      return errorResponse({
+        res,
+        statusCode: StatusCodes.BAD_REQUEST,
+        message: MSG.REQUEST.MISSING_LOGIN_IDENTIFIER,
       });
     }
 
@@ -108,7 +126,7 @@ module.exports.loginUser = async (req, res) => {
       return errorResponse({
         res,
         statusCode: StatusCodes.BAD_REQUEST,
-        message: MSG.USER_ERROR.PASSWORD_MISMATCH,
+        message: MSG.AUTH.LOGIN_FAILED,
       });
     }
 

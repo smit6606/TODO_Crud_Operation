@@ -2,7 +2,7 @@ const { DataTypes, Model } = require("sequelize");
 const bcrypt = require("bcrypt");
 const { sequelize } = require("../config/database");
 
-class User extends Model { }
+class User extends Model {}
 
 User.init(
   {
@@ -43,11 +43,9 @@ User.init(
     },
     about: {
       type: DataTypes.TEXT,
-      allowNull: false,
     },
     profile_image: {
       type: DataTypes.STRING,
-      allowNull: false,
     },
     is_Active: {
       type: DataTypes.BOOLEAN,

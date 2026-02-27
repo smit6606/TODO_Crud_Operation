@@ -4,6 +4,7 @@ const route = express.Router();
 const {
   createTodo,
   getTodos,
+  getTodoById,
   updateTodo,
   deleteTodo,
 } = require("../controllers/todo");
@@ -24,8 +25,12 @@ const {
 route.post("/", validateCreateTodo, createTodo);
 
 // Get All Todos By User
-// route - GET /api/task/
+// route - GET /api/task/ (accepts ?priority=... & ?status=... query strings)
 route.get("/", getTodos);
+
+// Get Todo By ID
+// route - GET /api/task/:id
+route.get("/:id", getTodoById);
 
 // Update Todo
 // route - PUT /api/task/:id

@@ -5,11 +5,18 @@ const { errorResponse } = require("../utils/responseFormat");
 const validateCreateTodo = (req, res, next) => {
     const { title, description } = req.body || {};
 
-    if (!title || !description) {
+    if (!title) {
         return errorResponse({
             res,
             statusCode: StatusCodes.BAD_REQUEST,
-            message: MSG.REQUEST.MISSING_FIELDS,
+            message: MSG.REQUEST.MISSING_TITLE,
+        });
+    }
+    if (!description) {
+        return errorResponse({
+            res,
+            statusCode: StatusCodes.BAD_REQUEST,
+            message: MSG.REQUEST.MISSING_DESCRIPTION,
         });
     }
 

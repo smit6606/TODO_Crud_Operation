@@ -6,12 +6,22 @@ module.exports = class TodoService {
         return await Todo.create(body);
     }
 
-    async findTodosByUser(userId) {
+    async findTodosByUser(userId, filters = {}) {
+        const whereClause = {
+            userId,
+            isDeleted: false,
+        };
+
+        if (filters.status) {
+            whereClause.status = filters.status;
+        }
+
+        if (filters.priority) {
+            whereClause.priority = filters.priority;
+        }
+
         return await Todo.findAll({
-            where: {
-                userId,
-                isDeleted: false,
-            },
+            where: whereClause,
             order: [["createdAt", "DESC"]],
         });
     }

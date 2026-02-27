@@ -4,6 +4,10 @@ require("dotenv").config({
 const express = require("express");
 const app = express();
 
+if (process.env.NODE_ENV === "production") {
+    console.log("Running in Production Mode");
+}
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
