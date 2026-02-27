@@ -15,11 +15,7 @@ const sequelize = new Sequelize(
 
 async function connectDB() {
   try {
-    const connection = await mysql.createConnection({
-      host: process.env.DB_HOST,
-      user: process.env.DB_USER,
-      password: process.env.DB_PASSWORD,
-    });
+    const connection = await mysql.createConnection(process.env.DATABASE_URL);
 
     if (process.env.NODE_ENV !== "production") {
       console.log("MySQL Connected");
