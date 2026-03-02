@@ -58,7 +58,7 @@ async function connectDB() {
         console.log(`Using ${process.env.DB_NAME} 🚀`);
       }
 
-      await connection.end(); // close raw connection since Sequelize takes over
+      await connection.end();
     }
   } catch (error) {
     console.error("Database Error:", error.message);

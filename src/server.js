@@ -10,7 +10,7 @@ async function startServer() {
     require("./models/user");
     require("./models/todo");
 
-    await sequelize.sync();
+    await sequelize.sync({ alter: process.env.NODE_ENV !== "production" });
 
     if (process.env.NODE_ENV !== "production") {
       console.log("Sequelize is running");

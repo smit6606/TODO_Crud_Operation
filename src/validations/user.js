@@ -62,7 +62,7 @@ const validateUserFields = (req, res, next) => {
 };
 
 const validateRegister = (req, res, next) => {
-  const { name, email, phone_no, password, user_name, gender } = req.body || {};
+  const { name, email, phone_no, password, confirmPassword, user_name, gender } = req.body || {};
 
   if (!name) {
     return errorResponse({
@@ -90,6 +90,20 @@ const validateRegister = (req, res, next) => {
       res,
       statusCode: StatusCodes.BAD_REQUEST,
       message: MSG.REQUEST.MISSING_PASSWORD,
+    });
+  }
+  if (!confirmPassword) {
+    return errorResponse({
+      res,
+      statusCode: StatusCodes.BAD_REQUEST,
+      message: "Confirm password is required.",
+    });
+  }
+  if (password !== confirmPassword) {
+    return errorResponse({
+      res,
+      statusCode: StatusCodes.BAD_REQUEST,
+      message: "Password and confirm password do not match.",
     });
   }
   if (!user_name) {

@@ -51,6 +51,46 @@ User.init(
       type: DataTypes.BOOLEAN,
       defaultValue: true,
     },
+    reset_password_otp: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    reset_password_otp_expiry: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
+    attempt: {
+      type: DataTypes.INTEGER,
+      defaultValue: 0,
+    },
+    attempt_expire: {
+      type: DataTypes.DATE,
+      defaultValue: null,
+      allowNull: true,
+    },
+    verify_attempt: {
+      type: DataTypes.INTEGER,
+      defaultValue: 0,
+    },
+    verify_attempt_expire: {
+      type: DataTypes.DATE,
+      defaultValue: null,
+      allowNull: true,
+    },
+    resend_otp_attempt: {
+      type: DataTypes.INTEGER,
+      defaultValue: 0,
+    },
+    resend_otp_attempt_expire: {
+      type: DataTypes.DATE,
+      defaultValue: null,
+      allowNull: true,
+    },
+    last_otp_sent_at: {
+      type: DataTypes.DATE,
+      defaultValue: null,
+      allowNull: true,
+    },
   },
   {
     sequelize,
