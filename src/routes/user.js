@@ -7,6 +7,8 @@ const {
   deleteProfile,
   getUserById,
   getUsersWithCompletedTodos,
+  getAllUsers,
+  changePassword,
 } = require("../controllers/user");
 
 const { validateUpdate } = require("../validations/user");
@@ -18,9 +20,17 @@ const upload = require("../middleware/upload");
 |--------------------------------------------------------------------------
 */
 
+// Get All Users
+// route - GET /api/user/
+route.get("/", getAllUsers);
+
 // Get User Profile
 // route - GET /api/user/profile
 route.get("/profile", getProfile);
+
+// Change Password
+// route - PUT /api/user/change-password
+route.put("/change-password", changePassword);
 
 // Update User Profile
 // route - PUT /api/user/profile/:id (or /api/user/profile)

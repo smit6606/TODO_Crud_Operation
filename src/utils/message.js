@@ -11,6 +11,34 @@ module.exports.MSG = {
     TOKEN_REFRESHED: "Token refreshed successfully.",
   },
 
+  OTP: {
+    IDENTIFIER_REQUIRED: "An identifier (username, email, or phone number) is required.",
+    USER_NOT_FOUND: "Invalid credentials provided. User not found.",
+    TOO_MANY_REQUESTS: (mins) => `You have requested too many OTPs. Please try again in ${mins} minutes.`,
+    COOLDOWN: (secs) => `Please wait ${secs} seconds before requesting a new OTP.`,
+    INVALID_METHOD: "Invalid sendMethod. Must be 'email' or 'phone'.",
+    SENT_SUCCESS: (method) => `OTP sent successfully via ${method}.`,
+    CREDENTIALS_REQUIRED: "identifier (username, email, or phone) and otp are required.",
+    TOO_MANY_FAILS: (mins) => `Too many failed verifications. Please request a new OTP in ${mins} minutes.`,
+    INVALIDATED: "Too many wrong attempts. This OTP is invalidated. Please request a new OTP.",
+    EXPIRED: (attempts) => `OTP has expired. You have ${attempts} attempts remaining for this OTP.`,
+    INVALID: (attempts) => `Invalid OTP. You have ${attempts} attempts remaining for this OTP.`,
+    VERIFIED: "OTP verified successfully.",
+    LOCKED_SECS: (secs) => `Too many attempts. Your account is temporarily locked for ${secs} seconds.`,
+    LOCKED: (mins) => `Too many attempts. Your account is temporarily locked for ${mins} minutes.`,
+    LOCKED_24H: (hrs) => `Account OTP actions locked. Please try again after ${hrs} hours.`
+  },
+
+  PASSWORD: {
+    RESET_TOKEN_REQUIRED: "resetToken, newPassword, and confirmPassword are required.",
+    MISMATCH: "New password and confirm password do not match.",
+    INVALID_TOKEN: "Invalid or expired reset token.",
+    RESET_SUCCESS: "Password has been reset successfully. You can now login.",
+    CHANGE_REQUIRED: "oldPassword, newPassword, and confirmPassword are required.",
+    INCORRECT_OLD: "Incorrect old password.",
+    CHANGE_SUCCESS: "Password changed successfully."
+  },
+
   /* ==========================
      AUTHORIZATION / ACCESS
   ========================== */

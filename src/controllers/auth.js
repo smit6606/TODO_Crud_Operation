@@ -173,11 +173,14 @@ module.exports.loginUser = async (req, res) => {
       expiresIn: "1d",
     });
 
+    const userResponse = user.toJSON();
+    delete userResponse.password;
+
     return successResponse({
       res,
       statusCode: StatusCodes.OK,
       message: MSG.AUTH.LOGIN_SUCCESS,
-      data: { token },
+      data: { token, user: userResponse },
     });
   } catch (error) {
     return errorResponse({
@@ -205,7 +208,7 @@ module.exports.forgotPassword = async (req, res) => {
        return errorResponse({
         res,
         statusCode: StatusCodes.BAD_REQUEST,
-        message: "An identifier (username, email, or phone number) is required.",
+        message: MSG.OTP.IDENTIFIER_REQUIRED,
       });
     }
 
@@ -215,33 +218,71 @@ module.exports.forgotPassword = async (req, res) => {
        return errorResponse({
         res,
         statusCode: StatusCodes.BAD_REQUEST,
-        message: "Invalid credentials provided. User not found.",
+        message: MSG.OTP.USER_NOT_FOUND,
       });
     }
 
-    // 3-Attempt Resend Lockout
-    if (user.resend_otp_attempt >= 3 && user.resend_otp_attempt_expire && new Date() < new Date(user.resend_otp_attempt_expire)) {
-      const remainingTime = Math.ceil((new Date(user.resend_otp_attempt_expire).getTime() - new Date().getTime()) / 60000);
+    // Reset Daily Lock if 24h passed
+    if (user.otp_daily_lock_reset && new Date() >= new Date(user.otp_daily_lock_reset)) {
+      user.otp_daily_lock_count = 0;
+      user.otp_daily_lock_reset = null;
+    }
+
+    // Check General OTP Block (15m or 24h block)
+    if (user.otp_blocked_until && new Date() < new Date(user.otp_blocked_until)) {
+      const remainingTimeMin = Math.ceil((new Date(user.otp_blocked_until).getTime() - new Date().getTime()) / 60000);
+      const is24h = remainingTimeMin > 60;
       return errorResponse({
         res,
         statusCode: StatusCodes.FORBIDDEN,
-        message: `You have requested too many OTPs. Please try again in ${remainingTime} minutes.`,
+        message: is24h
+           ? MSG.OTP.LOCKED_24H(Math.ceil(remainingTimeMin / 60))
+           : MSG.OTP.LOCKED(remainingTimeMin),
       });
     }
 
-    // Reset attempt count if lockout expired
-    if (user.resend_otp_attempt >= 3 && user.resend_otp_attempt_expire && new Date() >= new Date(user.resend_otp_attempt_expire)) {
-      user.resend_otp_attempt = 0;
+    if (user.otp_blocked_until && new Date() >= new Date(user.otp_blocked_until)) {
+       user.otp_request_count = 0;
+       user.otp_failed_attempts = 0;
+       user.otp_blocked_until = null;
     }
 
-    // 60-second OTP cooldown check
-    if (user.last_otp_sent_at && new Date() < new Date(new Date(user.last_otp_sent_at).getTime() + 60 * 1000)) {
-       const remainingTime = Math.ceil((new Date(user.last_otp_sent_at).getTime() + 60 * 1000 - new Date().getTime()) / 1000);
+    if (user.last_otp_sent_at && new Date() < new Date(new Date(user.last_otp_sent_at).getTime() + 30 * 1000)) {
+       const remainingTime = Math.ceil((new Date(user.last_otp_sent_at).getTime() + 30 * 1000 - new Date().getTime()) / 1000);
        return errorResponse({
          res,
          statusCode: StatusCodes.TOO_MANY_REQUESTS,
-         message: `Please wait ${remainingTime} seconds before requesting a new OTP.`,
+         message: MSG.OTP.COOLDOWN(remainingTime),
        });
+    }
+
+    // Daily Lock & 15m Block Rule (Max 3 Requests)
+    if (user.otp_request_count >= 3) {
+      const newDailyLock = (user.otp_daily_lock_count || 0) + 1;
+      let blockedUntil = new Date(Date.now() + 15 * 60 * 1000); // 15 min block
+      let dailyReset = user.otp_daily_lock_reset || new Date(Date.now() + 24 * 60 * 60 * 1000);
+      let msg = MSG.OTP.LOCKED(15);
+
+      // Elevate to 24h block if it's the 3rd daily lock
+      if (newDailyLock >= 3) {
+        blockedUntil = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hour block
+        dailyReset = null; // Reset the rolling window for a fresh 24h lock
+        msg = MSG.OTP.LOCKED_24H(24);
+      }
+
+      await userService.updateUser(user, {
+        otp_blocked_until: blockedUntil,
+        otp_daily_lock_count: newDailyLock,
+        otp_daily_lock_reset: dailyReset,
+        reset_password_otp: null,
+        reset_password_otp_expiry: null
+      });
+
+      return errorResponse({
+        res,
+        statusCode: StatusCodes.FORBIDDEN,
+        message: msg
+      });
     }
 
     // Determine send method (fallback to email if not provided)
@@ -254,26 +295,22 @@ module.exports.forgotPassword = async (req, res) => {
       return errorResponse({
         res,
         statusCode: StatusCodes.BAD_REQUEST,
-        message: "Invalid sendMethod. Must be 'email' or 'phone'.",
+        message: MSG.OTP.INVALID_METHOD,
       });
     }
 
-    // Generate 6-digit OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    const otpExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes from now
+    const otpExpiry = new Date(Date.now() + 10 * 60 * 1000);
 
-    const newResendAttempt = (user.resend_otp_attempt || 0) + 1;
-    const resendExpire = newResendAttempt >= 3 ? new Date(Date.now() + 60 * 60 * 1000) : null;
-
-    // Save OTP to user record
     await userService.updateUser(user, {
       reset_password_otp: otp,
       reset_password_otp_expiry: otpExpiry,
-      resend_otp_attempt: newResendAttempt,
-      resend_otp_attempt_expire: resendExpire,
+      otp_request_count: (user.otp_request_count || 0) + 1,
+      otp_failed_attempts: 0,
       last_otp_sent_at: new Date(),
-      verify_attempt: 0, // Fresh OTP means fresh verify attempts
-      verify_attempt_expire: null
+      otp_blocked_until: user.otp_blocked_until,
+      otp_daily_lock_count: user.otp_daily_lock_count,
+      otp_daily_lock_reset: user.otp_daily_lock_reset
     });
 
     // Send OTP
@@ -293,7 +330,7 @@ module.exports.forgotPassword = async (req, res) => {
     return successResponse({
       res,
       statusCode: StatusCodes.OK,
-      message: `OTP sent successfully via ${method}.`,
+      message: MSG.OTP.SENT_SUCCESS(method),
     });
 
   } catch (error) {
@@ -323,7 +360,7 @@ module.exports.verifyOtp = async (req, res) => {
        return errorResponse({
         res,
         statusCode: StatusCodes.BAD_REQUEST,
-        message: "identifier (username, email, or phone) and otp are required.",
+        message: MSG.OTP.CREDENTIALS_REQUIRED,
       });
     }
 
@@ -333,70 +370,99 @@ module.exports.verifyOtp = async (req, res) => {
        return errorResponse({
         res,
         statusCode: StatusCodes.BAD_REQUEST,
-        message: "User not found.",
+        message: MSG.OTP.USER_NOT_FOUND,
       });
     }
 
-    if (user.verify_attempt >= 3 && user.verify_attempt_expire && new Date() < new Date(user.verify_attempt_expire)) {
-      const remainingTime = Math.ceil((new Date(user.verify_attempt_expire).getTime() - new Date().getTime()) / 60000);
+    // Check General OTP Block
+    if (user.otp_blocked_until && new Date() < new Date(user.otp_blocked_until)) {
+      const remainingTimeMs = new Date(user.otp_blocked_until).getTime() - new Date().getTime();
+      const remainingTimeMin = Math.ceil(remainingTimeMs / 60000);
+      
+      let msg;
+      if (remainingTimeMs <= 60000) {
+          msg = MSG.OTP.LOCKED_SECS(Math.ceil(remainingTimeMs / 1000));
+      } else if (remainingTimeMin > 60) {
+          msg = MSG.OTP.LOCKED_24H(Math.ceil(remainingTimeMin / 60));
+      } else {
+          msg = MSG.OTP.LOCKED(remainingTimeMin);
+      }
+
       return errorResponse({
         res,
         statusCode: StatusCodes.FORBIDDEN,
-        message: `Too many failed verifications. Please request a new OTP in ${remainingTime} minutes.`,
-      });
-    }
-
-    if (!user.reset_password_otp || user.reset_password_otp !== otp) {
-       const newVerifyAttempt = (user.verify_attempt || 0) + 1;
-       let verifyExpire = user.verify_attempt_expire;
-       let msg = "Invalid OTP.";
-
-       if (newVerifyAttempt >= 3) {
-           verifyExpire = new Date(Date.now() + 60 * 60 * 1000); // 1 hour lockout
-           msg = "Account action locked due to 3 failed OTP attempts. Please wait 1 hour and request a new OTP.";
-           await userService.updateUser(user, {
-               verify_attempt: newVerifyAttempt,
-               verify_attempt_expire: verifyExpire,
-               reset_password_otp: null, // Wipe the false OTP
-               reset_password_otp_expiry: null
-           });
-       } else {
-           msg = `Invalid OTP. You have ${3 - newVerifyAttempt} attempts remaining.`;
-           await userService.updateUser(user, {
-               verify_attempt: newVerifyAttempt
-           });
-       }
-
-       return errorResponse({
-        res,
-        statusCode: StatusCodes.BAD_REQUEST,
         message: msg,
       });
     }
 
-    if (new Date() > new Date(user.reset_password_otp_expiry)) {
+    // Handle Wrong/Expired OTP
+    if (!user.reset_password_otp || user.reset_password_otp !== otp || new Date() > new Date(user.reset_password_otp_expiry)) {
+       const newFailed = (user.otp_failed_attempts || 0) + 1;
+       
+       if (newFailed >= 3) {
+           // 3 Tier Progressive Block on Verification Fails
+           const newDailyLock = (user.otp_daily_lock_count || 0) + 1;
+           let blockedUntil;
+           let msg;
+           let dailyReset = user.otp_daily_lock_reset || new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+           if (newDailyLock === 1) {
+               blockedUntil = new Date(Date.now() + 60 * 1000); // 60s block
+               msg = MSG.OTP.LOCKED_SECS(60);
+           } else if (newDailyLock === 2) {
+               blockedUntil = new Date(Date.now() + 15 * 60 * 1000); // 15m block
+               msg = MSG.OTP.LOCKED(15);
+           } else {
+               blockedUntil = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24h block
+               dailyReset = null; // Refresh 24h limit
+               msg = MSG.OTP.LOCKED_24H(24);
+           }
+
+           await userService.updateUser(user, {
+               otp_failed_attempts: 0,
+               reset_password_otp: null,
+               reset_password_otp_expiry: null,
+               otp_blocked_until: blockedUntil,
+               otp_daily_lock_count: newDailyLock,
+               otp_daily_lock_reset: dailyReset
+           });
+           
+           return errorResponse({
+             res,
+             statusCode: StatusCodes.FORBIDDEN,
+             message: msg
+           });
+       }
+
+       await userService.updateUser(user, { otp_failed_attempts: newFailed });
+       const msgFunc = (!user.reset_password_otp_expiry || new Date() > new Date(user.reset_password_otp_expiry)) ? MSG.OTP.EXPIRED : MSG.OTP.INVALID;
+       
        return errorResponse({
         res,
         statusCode: StatusCodes.BAD_REQUEST,
-        message: "OTP has expired.",
+        message: msgFunc(3 - newFailed),
       });
     }
 
-    // Reset verify attempts on success
+    // Success - Clear OTP states entirely
     await userService.updateUser(user, {
-        verify_attempt: 0,
-        verify_attempt_expire: null
+        otp_failed_attempts: 0,
+        otp_request_count: 0,
+        otp_blocked_until: null,
+        otp_daily_lock_count: 0,
+        otp_daily_lock_reset: null,
+        reset_password_otp: null,
+        reset_password_otp_expiry: null
     });
 
-    // OTP is valid. Generate a temporary token for the actual reset step.
     const resetToken = jwt.sign({ id: user.id }, process.env.JWT_SECRET, {
-      expiresIn: "15m", // 15 mins to reset password
+      expiresIn: "15m",
     });
 
     return successResponse({
       res,
       statusCode: StatusCodes.OK,
-      message: "OTP verified successfully.",
+      message: MSG.OTP.VERIFIED,
       data: { resetToken },
     });
 
@@ -423,7 +489,7 @@ module.exports.resetPassword = async (req, res) => {
       return errorResponse({
         res,
         statusCode: StatusCodes.BAD_REQUEST,
-        message: "resetToken, newPassword, and confirmPassword are required.",
+        message: MSG.PASSWORD.RESET_TOKEN_REQUIRED,
       });
     }
 
@@ -431,7 +497,7 @@ module.exports.resetPassword = async (req, res) => {
       return errorResponse({
         res,
         statusCode: StatusCodes.BAD_REQUEST,
-        message: "New password and confirm password do not match.",
+        message: MSG.PASSWORD.MISMATCH,
       });
     }
 
@@ -443,7 +509,7 @@ module.exports.resetPassword = async (req, res) => {
       return errorResponse({
         res,
         statusCode: StatusCodes.UNAUTHORIZED,
-        message: "Invalid or expired reset token.",
+        message: MSG.PASSWORD.INVALID_TOKEN,
       });
     }
 
@@ -452,14 +518,16 @@ module.exports.resetPassword = async (req, res) => {
        return errorResponse({
         res,
         statusCode: StatusCodes.BAD_REQUEST,
-        message: "User not found.",
+        message: MSG.USER_ERROR.NOT_FOUND,
       });
     }
 
-    // Update the password and clear OTP fields
-    // Password will be hashed by the Sequelize hook
+    // Explicitly hash password to bypass potential model hook issues
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
+
     await user.update({
-      password: newPassword, // Note: the User model's beforeUpdate hook should hash this
+      password: hashedPassword,
       reset_password_otp: null,
       reset_password_otp_expiry: null,
     });
@@ -467,7 +535,7 @@ module.exports.resetPassword = async (req, res) => {
     return successResponse({
       res,
       statusCode: StatusCodes.OK,
-      message: "Password has been reset successfully. You can now login.",
+      message: MSG.PASSWORD.RESET_SUCCESS,
     });
 
   } catch (error) {
@@ -494,7 +562,7 @@ module.exports.changePassword = async (req, res) => {
       return errorResponse({
         res,
         statusCode: StatusCodes.BAD_REQUEST,
-        message: "oldPassword, newPassword, and confirmPassword are required.",
+        message: MSG.PASSWORD.CHANGE_REQUIRED,
       });
     }
 
@@ -502,7 +570,7 @@ module.exports.changePassword = async (req, res) => {
       return errorResponse({
         res,
         statusCode: StatusCodes.BAD_REQUEST,
-        message: "New password and confirm password do not match.",
+        message: MSG.PASSWORD.MISMATCH,
       });
     }
 
@@ -512,7 +580,7 @@ module.exports.changePassword = async (req, res) => {
       return errorResponse({
         res,
         statusCode: StatusCodes.BAD_REQUEST,
-        message: "User not found.",
+        message: MSG.USER_ERROR.NOT_FOUND,
       });
     }
 
@@ -521,19 +589,22 @@ module.exports.changePassword = async (req, res) => {
       return errorResponse({
         res,
         statusCode: StatusCodes.BAD_REQUEST,
-        message: "Incorrect old password.",
+        message: MSG.PASSWORD.INCORRECT_OLD,
       });
     }
 
-    // Update to new password. Will be hashed by Sequelize hook.
+    // Update to new password. Explicitly hash to ensure persistence.
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
+    
     await user.update({
-       password: newPassword
+       password: hashedPassword
     });
 
     return successResponse({
       res,
       statusCode: StatusCodes.OK,
-      message: "Password changed successfully.",
+      message: MSG.PASSWORD.CHANGE_SUCCESS,
     });
 
   } catch (error) {

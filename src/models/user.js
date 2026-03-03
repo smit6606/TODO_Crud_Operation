@@ -68,20 +68,24 @@ User.init(
       defaultValue: null,
       allowNull: true,
     },
-    verify_attempt: {
+    otp_failed_attempts: {
       type: DataTypes.INTEGER,
       defaultValue: 0,
     },
-    verify_attempt_expire: {
+    otp_request_count: {
+      type: DataTypes.INTEGER,
+      defaultValue: 0,
+    },
+    otp_blocked_until: {
       type: DataTypes.DATE,
       defaultValue: null,
       allowNull: true,
     },
-    resend_otp_attempt: {
+    otp_daily_lock_count: {
       type: DataTypes.INTEGER,
       defaultValue: 0,
     },
-    resend_otp_attempt_expire: {
+    otp_daily_lock_reset: {
       type: DataTypes.DATE,
       defaultValue: null,
       allowNull: true,

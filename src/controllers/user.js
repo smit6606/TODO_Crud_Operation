@@ -3,6 +3,7 @@ const { MSG } = require("../utils/message");
 const { errorResponse, successResponse } = require("../utils/responseFormat");
 const UserService = require("../services/auth");
 const TodoService = require("../services/todo");
+const bcrypt = require("bcrypt");
 const cloudinary = require("../config/cloudinary");
 const { deleteCloudinaryImage, uploadCloudinaryBuffer } = require("../utils/cloudinaryHelper");
 
@@ -264,6 +265,47 @@ module.exports.getUserById = async (req, res) => {
       statusCode: StatusCodes.OK,
       message: MSG.USER.FETCHED,
       data: user,
+    });
+  } catch (error) {
+    return errorResponse({
+      res,
+      statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
+      message: MSG.SERVER.INTERNAL_ERROR,
+      error: error.message,
+    });
+  }
+};
+
+module.exports.changePassword = async (req, res) => {
+  try {
+    const userId = getUserId(req);
+    const { oldPassword, newPassword } = req.body;
+
+    if (!oldPassword || !newPassword) {
+       return errorResponse({
+        res,
+        statusCode: StatusCodes.BAD_REQUEST,
+        message: "Current and new passwords are critically required."
+       });
+    }
+
+    const user = await userService.findById(userId);
+    if (!user) {
+      return errorResponse({ res, statusCode: StatusCodes.NOT_FOUND, message: MSG.USER_ERROR.NOT_FOUND });
+    }
+
+    const isMatch = await bcrypt.compare(oldPassword, user.password);
+    if (!isMatch) {
+      return errorResponse({ res, statusCode: StatusCodes.BAD_REQUEST, message: "Incorrect current password." });
+    }
+
+    user.password = newPassword;
+    await user.save();
+
+    return successResponse({
+      res,
+      statusCode: StatusCodes.OK,
+      message: "Security key rotated successfully."
     });
   } catch (error) {
     return errorResponse({
