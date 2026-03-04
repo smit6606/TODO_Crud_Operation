@@ -35,7 +35,7 @@ describe("1 — authentication ", () => {
             .field("email", userEmail)
             .field("phone_no", "1234567890")
             .field("password", "StrongP@ssw0rd!")
-            .field("confirm_password", "StrongP@ssw0rd!")
+            .field("confirmPassword", "StrongP@ssw0rd!")
             .field("gender", "male")
             .field("about", "I am a test user.");
 
@@ -57,7 +57,7 @@ describe("1 — authentication ", () => {
             .field("email", userEmailOther)
             .field("phone_no", "1234567891")
             .field("password", "StrongP@ssw0rd!")
-            .field("confirm_password", "StrongP@ssw0rd!")
+            .field("confirmPassword", "StrongP@ssw0rd!")
             .field("gender", "female")
             .field("about", "I am another test user.");
 
@@ -80,7 +80,7 @@ describe("1 — authentication ", () => {
             .field("email", userEmail)
             .field("phone_no", "0987654321")
             .field("password", "StrongP@ssw0rd!")
-            .field("confirm_password", "StrongP@ssw0rd!")
+            .field("confirmPassword", "StrongP@ssw0rd!")
             .field("gender", "female")
             .field("about", "Another test.");
 
@@ -100,7 +100,7 @@ describe("1 — authentication ", () => {
             .field("email", "dupuser@example.com")
             .field("phone_no", "1234567890")
             .field("password", "StrongP@ssw0rd!")
-            .field("confirm_password", "StrongP@ssw0rd!")
+            .field("confirmPassword", "StrongP@ssw0rd!")
             .field("gender", "female")
             .field("about", "Another test.");
 
@@ -125,7 +125,7 @@ describe("1 — authentication ", () => {
             .field("email", "invalidpass@example.com")
             .field("phone_no", "1231231230")
             .field("password", "weakpass")
-            .field("confirm_password", "weakpass")
+            .field("confirmPassword", "weakpass")
             .field("gender", "male")
             .field("about", "Invalid password testing.");
 

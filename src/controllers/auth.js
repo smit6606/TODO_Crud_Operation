@@ -522,12 +522,9 @@ module.exports.resetPassword = async (req, res) => {
       });
     }
 
-    // Explicitly hash password to bypass potential model hook issues
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(newPassword, salt);
-
+    // Password hashing is handled by the Sequelize beforeUpdate hook.
     await user.update({
-      password: hashedPassword,
+      password: newPassword,
       reset_password_otp: null,
       reset_password_otp_expiry: null,
     });
@@ -549,72 +546,4 @@ module.exports.resetPassword = async (req, res) => {
   }
 };
 
-/**
- * Allows a logged-in user to change their password.
- * Must be authenticated (uses req.user from auth middleware).
- */
-module.exports.changePassword = async (req, res) => {
-  try {
-    const { oldPassword, newPassword, confirmPassword } = req.body || {};
-    const userId = req.user.id;
-
-    if (!oldPassword || !newPassword || !confirmPassword) {
-      return errorResponse({
-        res,
-        statusCode: StatusCodes.BAD_REQUEST,
-        message: MSG.PASSWORD.CHANGE_REQUIRED,
-      });
-    }
-
-    if (newPassword !== confirmPassword) {
-      return errorResponse({
-        res,
-        statusCode: StatusCodes.BAD_REQUEST,
-        message: MSG.PASSWORD.MISMATCH,
-      });
-    }
-
-    // Need to fetch user with password to compare
-    const user = await userService.findById(userId);
-    if (!user) {
-      return errorResponse({
-        res,
-        statusCode: StatusCodes.BAD_REQUEST,
-        message: MSG.USER_ERROR.NOT_FOUND,
-      });
-    }
-
-    const isMatch = await bcrypt.compare(oldPassword, user.password);
-    if (!isMatch) {
-      return errorResponse({
-        res,
-        statusCode: StatusCodes.BAD_REQUEST,
-        message: MSG.PASSWORD.INCORRECT_OLD,
-      });
-    }
-
-    // Update to new password. Explicitly hash to ensure persistence.
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(newPassword, salt);
-    
-    await user.update({
-       password: hashedPassword
-    });
-
-    return successResponse({
-      res,
-      statusCode: StatusCodes.OK,
-      message: MSG.PASSWORD.CHANGE_SUCCESS,
-    });
-
-  } catch (error) {
-    console.error("Change Password Error:", error);
-    return errorResponse({
-      res,
-      statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
-      message: MSG.SERVER.INTERNAL_ERROR,
-      error: error.message,
-    });
-  }
-};
 

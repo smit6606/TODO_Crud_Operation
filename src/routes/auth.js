@@ -1,7 +1,7 @@
 const express = require("express");
 const route = express.Router();
 
-const { registerUser, loginUser, forgotPassword, verifyOtp, resetPassword, changePassword } = require("../controllers/auth");
+const { registerUser, loginUser, forgotPassword, verifyOtp, resetPassword } = require("../controllers/auth");
 const { validateRegister } = require("../validations/user");
 const upload = require("../middleware/upload");
 
@@ -31,9 +31,6 @@ route.post("/forgot-password/verify-otp", upload.none(), verifyOtp);
 //  route - POST /api/auth/forgot-password/reset-password
 route.post("/forgot-password/reset-password", upload.none(), resetPassword);
 
-// 6. Change Password (Requires Auth)
-//  route - POST /api/auth/change-password
-const authMiddleware = require("../middleware/auth");
-route.post("/change-password", authMiddleware, upload.none(), changePassword);
+
 
 module.exports = route;
