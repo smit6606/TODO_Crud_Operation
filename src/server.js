@@ -8,9 +8,8 @@ async function startServer() {
     await connectDB();
 
     require("./models/user");
-    require("./models/todo");
-
-    await sequelize.sync({ alter: process.env.NODE_ENV !== "production" });
+    // Temporarily forcing alter: true in all environments to apply latest schema changes to Railway
+    await sequelize.sync({ alter: true });
 
     if (process.env.NODE_ENV !== "production") {
       console.log("Sequelize is running");
