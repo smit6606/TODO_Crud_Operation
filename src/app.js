@@ -15,7 +15,10 @@ app.use(morgan("dev")); // Live HTTP logging
 
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL || "http://localhost:5173",
+    origin: function (origin, callback) {
+      // Allow any origin for now to verify the fix
+      callback(null, true);
+    },
     credentials: true,
   }),
 );
