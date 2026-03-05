@@ -139,13 +139,7 @@ module.exports.updateTodo = async (req, res) => {
       });
     }
 
-    if ((todo.status || "").toLowerCase() === "completed") {
-      return errorResponse({
-        res,
-        statusCode: StatusCodes.BAD_REQUEST,
-        message: "Completed tasks cannot be modified or reverted.",
-      });
-    }
+
 
     const allowedFields = ["title", "description", "status", "priority"];
 

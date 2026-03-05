@@ -68,6 +68,10 @@ User.init(
       defaultValue: null,
       allowNull: true,
     },
+    attempt_lock_tier: {
+      type: DataTypes.INTEGER,
+      defaultValue: 1,
+    },
     otp_failed_attempts: {
       type: DataTypes.INTEGER,
       defaultValue: 0,

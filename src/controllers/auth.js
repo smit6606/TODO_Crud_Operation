@@ -124,12 +124,12 @@ module.exports.loginUser = async (req, res) => {
     }
 
     // Lockout Check
-    if (user.attempt >= 3 && user.attempt_expire && new Date() < new Date(user.attempt_expire)) {
+    if (user.attempt_expire && new Date() < new Date(user.attempt_expire)) {
       const remainingTime = Math.ceil((new Date(user.attempt_expire).getTime() - new Date().getTime()) / 60000);
       return errorResponse({
         res,
         statusCode: StatusCodes.FORBIDDEN,
-        message: `Account is temporarily locked due to too many failed attempts. Please try again in ${remainingTime} minutes.`,
+        message: `Account locked. Try again in ${remainingTime} minute(s).`,
       });
     }
 
@@ -139,20 +139,24 @@ module.exports.loginUser = async (req, res) => {
       // Increment attempt counter on failure
       const newAttemptCount = (user.attempt || 0) + 1;
       let attemptExpire = user.attempt_expire;
-
-      let msg = MSG.AUTH.LOGIN_FAILED;
+      let lockTier = user.attempt_lock_tier || 1;
+      let msg = "Invalid password.";
 
       if (newAttemptCount >= 3) {
-        attemptExpire = new Date(Date.now() + 60 * 60 * 1000); // Lock for 60 minutes
-        msg = "Account is now locked due to 3 failed attempts. Please try again in 1 hour.";
+        attemptExpire = new Date(Date.now() + lockTier * 60 * 1000); // Lock for lockTier minutes
+        msg = `Too many failed attempts. Locked for ${lockTier} minute(s).`;
+        
+        await user.update({
+          attempt: 0,
+          attempt_expire: attemptExpire,
+          attempt_lock_tier: lockTier + 1
+        });
       } else {
-        msg = `Invalid credentials. You have ${3 - newAttemptCount} attempts remaining before account gets locked.`;
+        await user.update({
+          attempt: newAttemptCount
+        });
+        msg = `Invalid password. ${3 - newAttemptCount} attempt(s) left.`;
       }
-
-      await user.update({
-        attempt: newAttemptCount,
-        attempt_expire: attemptExpire
-      });
 
       return errorResponse({
         res,
@@ -162,10 +166,11 @@ module.exports.loginUser = async (req, res) => {
     }
 
     // Reset attempts on successful login
-    if (user.attempt > 0) {
+    if (user.attempt > 0 || user.attempt_lock_tier > 1) {
       await user.update({
         attempt: 0,
-        attempt_expire: null
+        attempt_expire: null,
+        attempt_lock_tier: 1
       });
     }
 
